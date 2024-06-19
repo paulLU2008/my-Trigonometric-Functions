@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trigonometric Functions</title>
+    <style>
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        canvas {
+            border: 1px solid black;
+            margin: 10px;
+        }
+        button {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="sinCanvas" width="400" height="200"></canvas>
+        <canvas id="cosCanvas" width="400" height="200"></canvas>
+        <canvas id="tanCanvas" width="400" height="200"></canvas>
+        <canvas id="cotCanvas" width="400" height="200"></canvas>
+        <canvas id="secCanvas" width="400" height="200"></canvas>
+        <canvas id="cscCanvas" width="400" height="200"></canvas>
+        
+    </div>
+    <button id="saveimg">Save as JPEG</button>
+    <button id="gray">黑白/彩色 圖片</button>
+    <input id="slider1" type="range" min="0" max="100" value="50">
+    <label for="slider1">波長：<span id="sliderValue1"></span></label>
+
+    <input id="slider2" type="range" min="-100" max="100" value="50">
+    <label for="slider2">振幅：<span id="sliderValue2"></span></label>
+</body>
+</html>
+<script>
+
+    let value = 50;
+    let value2 = 50;
+
+    const slider1 = document.getElementById('slider1');
+    const currentValueSpan1 = document.getElementById('sliderValue1');
+    const slider2 = document.getElementById('slider2');
+    const currentValueSpan2 = document.getElementById('sliderValue2');
+
+    const canvasIds = ['sinCanvas', 'cosCanvas', 'tanCanvas', 'cotCanvas', 'secCanvas', 'cscCanvas'];
+    const functions = [Math.sin, Math.cos, Math.tan, x => 1 / Math.tan(x), x => 1 / Math.cos(x), x => 1 / Math.sin(x)];
+    const labels = ['sin(x)', 'cos(x)', 'tan(x)', 'cot(x)', 'sec(x)', 'csc(x)'];
+    let graybutton = true
+    slider1.addEventListener('input', () => {
+        value = parseInt(slider1.value);
+        currentValueSpan1.textContent = value;
+        drawAll();
+    });
+
+    slider2.addEventListener('input', () => {
+        value2 = parseInt(slider2.value);
+        currentValueSpan2.textContent = value2;
+        drawAll();
+    });
+
+    document.getElementById('saveimg').addEventListener('click', () => {
+        canvasIds.forEach((id, index) => {
+            saveCanvasAsJPEG(id, labels[index]);
+        });
+    });
+
+    document.getElementById('gray').addEventListener('click', () => {
+        if(graybutton){
+            graybutton=false
+            drawAll();
+        }else{
+            graybutton=true
+            drawAll();
+        }
+        
+    });
+
+    function drawAll() {
+        if(graybutton){
+        canvasIds.forEach((id, index) => {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFunction(ctx, functions[index], labels[index]);
+        
+        });
+        }else{
+            canvasIds.forEach((id, index) => {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFunction(ctx, functions[index], labels[index]);
+            convertToGrayscale(ctx);
+        });
+        }
+
+    }
+
+    function saveCanvasAsJPEG(canvasId, label) {
+        const canvas = document.getElementById(canvasId);
+        const dataURL = canvas.toDataURL('image/jpeg');
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = `${label}.jpeg`;
+        link.click();
+    }
+
+    function drawFunction(ctx, func, label) {
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const scaleX = 10; // scale factor for x-axis
+        const scaleY = 30; // scale factor for y-axis
+
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw x and y axis
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.moveTo(centerX, 0);
+        ctx.lineTo(centerX, height);
+        ctx.stroke();
+
+        switch (label) {
+            case 'sin(x)':
+                ctx.strokeStyle = 'red';
+                break;
+            case 'cos(x)':
+                ctx.strokeStyle = 'blue';
+                break;
+            case 'tan(x)':
+                ctx.strokeStyle = 'green';
+                break;
+            case 'cot(x)':
+                ctx.strokeStyle = 'purple';
+                break;
+            case 'sec(x)':
+                ctx.strokeStyle = 'brown';
+                break;
+            case 'csc(x)':
+                ctx.strokeStyle = 'gold';
+                break;
+        }
+
+        ctx.lineWidth = 2; // 你可以调整这个值来改变线条的粗细
+        // Draw function
+        ctx.beginPath();
+        for (let x = -width / 2; x < width / 2; x += 1) {
+            const scaledX = x / value;
+            const y = func(scaledX);
+            const scaledY = y * value2;
+
+            if (x === -width / 2) {
+                ctx.moveTo(centerX + x, centerY - scaledY);
+            } else {
+                ctx.lineTo(centerX + x, centerY - scaledY);
+            }
+        }
+        ctx.stroke();
+
+        // Draw label
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.fillText(label, 10, 20);
+    }
+    function convertToGrayscale(ctx) {
+        const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const avg = 0.299 * r + 0.587 * g + 0.114 * b;
+
+            data[i] = avg;     // Red
+            data[i + 1] = avg; // Green
+            data[i + 2] = avg; // Blue
+            // Alpha (data[i + 3]) remains the same
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    // Initial draw
+    currentValueSpan1.textContent = value;
+    currentValueSpan2.textContent = value2;
+    drawAll();
+
+
+</script>
